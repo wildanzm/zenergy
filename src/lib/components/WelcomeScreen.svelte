@@ -62,7 +62,7 @@
 				<p class="text-sm text-gray-300">Get step-by-step explanations and powerful reasoning.</p>
 			</div>
 			<div class="flex flex-col items-center rounded-xl bg-gray-800/80 p-6 shadow">
-				<div class="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-500">
+				<div class="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-600">
 					<svg
 						class="h-8 w-8 text-white"
 						viewBox="0 0 24 24"
