@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import ModelSelector from './ModelSelector.svelte';
 
 	let mounted = false;
 
@@ -33,7 +32,6 @@
 
 			<!-- Navigation Items -->
 			<div class="flex items-center space-x-6">
-				<ModelSelector />
 			</div>
 		</div>
 	</div>

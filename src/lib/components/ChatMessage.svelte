@@ -144,13 +144,13 @@
 		const codeId = `code-${Math.random().toString(36).substr(2, 9)}`;
 
 		return `
-			<div class="code-block-container" style="position: relative; margin: 12px 0; max-width: 100%; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: rgb(31 41 55);">
-				<div class="code-header bg-gray-100/80 dark:bg-gray-800/80 border border-gray-200/60 dark:border-gray-700/60 backdrop-blur-sm" style="padding: 6px 10px; border-radius: 8px 8px 0 0; border-bottom: none; display: flex; justify-content: space-between; align-items: center; position: relative; background: rgb(59 130 246); color: white;">
-					<span class="text-white" style="font-size: 11px; font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">${language || 'code'}</span>
+			<div class="code-block-container" style="position: relative; margin: 16px 0; max-width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: rgb(15 23 42);">
+				<div class="code-header bg-gray-100/80 dark:bg-gray-800/80 border border-gray-200/60 dark:border-gray-700/60 backdrop-blur-sm" style="padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center; background: rgb(59 130 246); color: white;">
+					<span class="text-white" style="font-size: 12px; font-family: 'SF Mono', 'Monaco', 'Consolas', monospace; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">${language || 'code'}</span>
 					<button 
 						class="copy-code-btn bg-white/20 hover:bg-white/30 border border-white/20" 
 						data-code="${code.replace(/"/g, '&quot;')}"
-						style="padding: 4px 6px; border-radius: 4px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); color: white;"
+						style="padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); color: white;"
 						title="Copy code"
 					>
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -158,8 +158,8 @@
 						</svg>
 					</button>
 				</div>
-				<div class="code-content-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; position: relative;">
-					<pre class="code-content bg-gray-950 dark:bg-gray-900 text-gray-100" style="margin: 0; border-radius: 0 0 8px 8px; padding: 12px 14px; overflow-x: auto; font-family: 'SF Mono', 'Monaco', 'Consolas', 'Fira Code', monospace; font-size: 12px; line-height: 1.4; position: relative; white-space: pre; word-wrap: normal; background: rgb(15 23 42); color: rgb(229 231 235); border: none; min-height: 40px; max-width: 100%;"><code class="language-${language} hljs" style="display: block; padding: 0; margin: 0; background: transparent; font-size: inherit; line-height: inherit; white-space: pre; overflow-x: auto; word-wrap: normal;">${highlightedCode}</code></pre>
+				<div class="code-content-wrapper" style="overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; width: 100%; position: relative; background: rgb(15 23 42);">
+					<pre class="code-content" style="margin: 0; border-radius: 0 0 12px 12px; padding: 0; background: transparent; border: none; min-width: 100%; width: max-content; display: block;"><code class="language-${language} hljs" style="display: block; min-width: 100%; padding: 16px; font-family: 'SF Mono', 'Monaco', 'Consolas', 'Fira Code', monospace; font-size: 13px; line-height: 1.6; white-space: pre; color: rgb(229 231 235); background: transparent;">${highlightedCode}</code></pre>
 				</div>
 			</div>
 		`;
@@ -178,98 +178,7 @@
 
 	marked.use({ renderer });
 
-	/**
-	 * Detect and convert plain text tables to HTML
-	 */
-	function detectAndRenderPlainTables(content: string): string {
-		const lines = content.split('\n');
-		let result = [];
-		let i = 0;
 
-		while (i < lines.length) {
-			const line = lines[i].trim();
-
-			// Look for potential table patterns
-			if (line && !line.startsWith('|') && !line.includes('<')) {
-				// Check if this could be a table header
-				const cols = line.split(/\s{2,}/);
-				if (cols.length > 1 && cols.every((col) => col.trim().length > 0)) {
-					// Look ahead for more similar lines (table body)
-					let tableLines = [line];
-					let j = i + 1;
-
-					while (j < lines.length) {
-						const nextLine = lines[j].trim();
-						if (!nextLine) break;
-
-						const nextCols = nextLine.split(/\s{2,}/);
-						if (nextCols.length === cols.length) {
-							tableLines.push(nextLine);
-							j++;
-						} else {
-							break;
-						}
-					}
-
-					// If we found at least 2 lines that look like a table, convert it
-					if (tableLines.length >= 2) {
-						const tableHtml = convertPlainTableToHtml(tableLines);
-						result.push(tableHtml);
-						i = j;
-						continue;
-					}
-				}
-			}
-
-			result.push(line);
-			i++;
-		}
-
-		return result.join('\n');
-	}
-
-	/**
-	 * Convert plain text table to HTML
-	 */
-	function convertPlainTableToHtml(tableLines: string[]): string {
-		const header = tableLines[0];
-		const rows = tableLines.slice(1);
-
-		const headerCols = header.split(/\s{2,}/).map((col) => col.trim());
-
-		let headerHtml = headerCols
-			.map(
-				(col) =>
-					`<th style="padding: 8px 10px; text-align: left; font-weight: 600; font-size: 11px; color: rgb(255 255 255); background: rgb(59 130 246); white-space: nowrap; min-width: 80px; position: sticky; top: 0; z-index: 2;">${col}</th>`
-			)
-			.join('');
-
-		let bodyHtml = rows
-			.map((row) => {
-				const cols = row.split(/\s{2,}/).map((col) => col.trim());
-				const cells = cols
-					.map(
-						(col) =>
-							`<td style="padding: 6px 8px; font-size: 11px; color: rgb(31 41 55); background: rgb(248 250 252); word-wrap: break-word; max-width: 120px; min-width: 80px; vertical-align: top; white-space: normal; overflow-wrap: break-word;">${col}</td>`
-					)
-					.join('');
-				return `<tr style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgb(243 244 246)'" onmouseout="this.style.backgroundColor='rgb(248 250 252)'">${cells}</tr>`;
-			})
-			.join('');
-
-		return `
-			<div class="table-wrapper responsive-table-wrapper" style="margin: 12px 0; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background: rgb(248 250 252); overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; width: 100%; border: 1px solid rgb(203 213 225); position: relative;">
-				<table class="markdown-table responsive-table" style="width: 100%; border-collapse: collapse; background: rgb(248 250 252); min-width: 320px; table-layout: auto; font-size: 11px;">
-					<thead>
-						<tr>${headerHtml}</tr>
-					</thead>
-					<tbody>
-						${bodyHtml}
-					</tbody>
-				</table>
-			</div>
-		`;
-	}
 
 	/**
 	 * Normalize markdown content from different AI models
@@ -336,15 +245,6 @@
 				}
 			}
 
-			// If still no tables but content looks like it might have tables, try plain table detection
-			if (!resultStr.includes('<table>') && hasPlainTablePattern(md)) {
-				const withPlainTables = detectAndRenderPlainTables(md);
-				if (withPlainTables !== md) {
-					// Plain tables were detected and converted, render the result
-					result = withPlainTables;
-				}
-			}
-
 			return typeof result === 'string' ? result : md;
 		} catch (error) {
 			console.warn('Markdown parsing error:', error);
@@ -359,26 +259,7 @@
 		}
 	}
 
-	/**
-	 * Check if content might contain plain text tables
-	 */
-	function hasPlainTablePattern(content: string): boolean {
-		const lines = content.split('\n');
-		for (let i = 0; i < lines.length - 1; i++) {
-			const line = lines[i].trim();
-			const nextLine = lines[i + 1]?.trim();
 
-			if (line && nextLine && !line.includes('|') && !nextLine.includes('|')) {
-				const cols1 = line.split(/\s{2,}/);
-				const cols2 = nextLine.split(/\s{2,}/);
-
-				if (cols1.length > 1 && cols2.length > 1 && cols1.length === cols2.length) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
 
 	/**
 	 * Parse deepthink message to separate thinking from output
@@ -551,8 +432,12 @@
 
 				// Create wrapper structure
 				const wrapper = document.createElement('div');
-				wrapper.className = 'code-block-container';
-				wrapper.style.cssText = 'position: relative; margin: 16px 0;';
+				wrapper.className = 'code-content-wrapper';
+				wrapper.style.cssText = 'overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; width: 100%; position: relative; background: rgb(15 23 42);';
+
+				const container = document.createElement('div');
+				container.className = 'code-block-container';
+				container.style.cssText = 'position: relative; margin: 16px 0; max-width: 100%; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: rgb(15 23 42);';
 
 				const header = document.createElement('div');
 				header.className =
@@ -581,15 +466,19 @@
 				header.appendChild(button);
 
 				// Update pre element styles
-				preElement.className =
-					'bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200';
+				preElement.className = '';
 				preElement.style.cssText =
-					'margin: 0; border-radius: 0 0 8px 8px; border-top: none; padding: 32px 36px; overflow-x: auto; font-family: "SF Mono", "Monaco", "Consolas", "Fira Code", monospace; font-size: 14px; line-height: 2.0; white-space: pre; word-wrap: normal; min-height: 60px;';
+					'margin: 0; border-radius: 0 0 12px 12px; padding: 0; background: transparent; border: none; min-width: 100%; width: max-content; display: block;';
+				
+				// Update code element styles
+				(codeElement as HTMLElement).style.cssText =
+					'display: block; min-width: 100%; padding: 16px; font-family: "SF Mono", "Monaco", "Consolas", "Fira Code", monospace; font-size: 13px; line-height: 1.6; white-space: pre; color: rgb(229 231 235); background: transparent;';
 
 				// Wrap the pre element
-				preElement.parentNode?.insertBefore(wrapper, preElement);
-				wrapper.appendChild(header);
+				preElement.parentNode?.insertBefore(container, preElement);
 				wrapper.appendChild(preElement);
+				container.appendChild(header);
+				container.appendChild(wrapper);
 
 				// Setup button listener
 				setupButtonListener(button, codeText);
@@ -674,30 +563,17 @@
 	// Process message for markdown
 	$: processedMessage = (() => {
 		try {
+			// Extract the source text based on thinking blocks
+			const sourceText = hasThinking && outputSection ? outputSection : displayedMessage;
+
 			// Remove any unwanted comments or artifacts
-			const cleanMessage = displayedMessage
+			const cleanMessage = sourceText
 				.replace(/<!--[\s\S]*?-->/g, '') // Remove HTML comments
 				.replace(/\/\*[\s\S]*?\*\//g, '') // Remove CSS comments
-				.replace(/\/\/.*$/gm, '') // Remove single line comments that are not in code blocks
 				.trim();
 
 			// Use the safe markdown renderer with normalization
-			const result = renderMarkdownSafe(cleanMessage);
-
-			// Additional post-processing for edge cases
-			if (typeof result === 'string') {
-				// If markdown rendering resulted in just paragraphs but original had table-like content
-				if (
-					!result.includes('<table>') &&
-					!result.includes('<pre>') &&
-					hasPlainTablePattern(cleanMessage)
-				) {
-					// Try direct table conversion as last resort
-					return detectAndRenderPlainTables(cleanMessage);
-				}
-			}
-
-			return result;
+			return renderMarkdownSafe(cleanMessage);
 		} catch (error) {
 			console.warn('Error processing message:', error);
 			return displayedMessage;
@@ -738,7 +614,7 @@
 		: 'justify-start'} animate-in slide-in-from-bottom-2 mb-4 duration-300"
 	bind:this={messageContainer}
 >
-	<div class="w-full {isUser ? 'ml-auto max-w-lg' : ''} group relative">
+	<div class="w-full {isUser ? 'ml-auto max-w-full sm:max-w-lg' : ''} group relative">
 		<!-- User message bubble -->
 		{#if isUser}
 			<div
@@ -774,7 +650,7 @@
 				{/if}
 
 				<div
-					class="w-fit max-w-lg rounded-2xl rounded-br-sm bg-blue-500 px-4 py-2.5 shadow-sm"
+					class="w-fit max-w-full sm:max-w-lg rounded-2xl rounded-br-sm bg-blue-500 px-4 py-2.5 shadow-sm"
 					role="button"
 					tabindex="0"
 				>
@@ -833,7 +709,7 @@
 					</div>
 				</div>
 				<div
-					class="relative flex flex-1 flex-col"
+					class="relative flex min-w-0 flex-1 flex-col"
 					on:mouseenter={() => (showCopyButton = true)}
 					on:mouseleave={() => (showCopyButton = false)}
 					role="group"
@@ -889,16 +765,7 @@
 					<div
 						class="prose prose-sm overflow-wrap-anywhere max-w-none break-words text-gray-800 dark:text-gray-200"
 					>
-						{@html typeof (hasThinking && outputSection ? outputSection : processedMessage) ===
-						'string'
-							? renderMarkdownSafe(
-									hasThinking && outputSection && typeof outputSection === 'string'
-										? outputSection
-										: typeof processedMessage === 'string'
-											? processedMessage
-											: ''
-								)
-							: ''}
+						{@html typeof processedMessage === 'string' ? processedMessage : ''}
 					</div>
 					{#if isAnimating}
 						<span
@@ -1131,23 +998,59 @@
 
 	/* Custom prose styles for better markdown rendering */
 	:global(.prose p) {
-		margin: 0.75rem 0;
+		margin: 0.75rem 0 1rem 0;
 		word-wrap: break-word;
+		line-height: 1.7;
 		overflow-wrap: break-word;
 		hyphens: auto;
 	}
 
-	:global(.prose h1),
-	:global(.prose h2),
-	:global(.prose h3),
-	:global(.prose h4),
-	:global(.prose h5),
-	:global(.prose h6) {
-		word-wrap: break-word;
-		overflow-wrap: break-word;
-		margin: 1.5rem 0 0.5rem 0;
+	:global(.prose strong) {
 		font-weight: 600;
+		color: rgb(17 24 39);
 	}
+	:global(.dark .prose strong) {
+		color: rgb(243 244 246);
+	}
+
+	:global(.prose a) {
+		color: rgb(59 130 246);
+		text-decoration: none;
+		font-weight: 500;
+		border-bottom: 1px dashed rgb(147 197 253);
+		transition: all 0.2s ease;
+	}
+	:global(.prose a:hover) {
+		color: rgb(37 99 235);
+		border-bottom-style: solid;
+		border-bottom-color: rgb(59 130 246);
+	}
+	:global(.dark .prose a) {
+		color: rgb(96 165 250);
+		border-bottom-color: rgb(30 58 138);
+	}
+	:global(.dark .prose a:hover) {
+		color: rgb(147 197 253);
+		border-bottom-color: rgb(96 165 250);
+	}
+
+	:global(.prose h1) {
+		font-size: 1.75rem; margin: 1.5rem 0 1rem 0; font-weight: 700; color: rgb(17 24 39);
+		letter-spacing: -0.025em; border-bottom: 1px solid rgb(229 231 235); padding-bottom: 0.5rem;
+	}
+	:global(.prose h2) {
+		font-size: 1.5rem; margin: 2rem 0 1rem 0; font-weight: 600; color: rgb(31 41 55);
+		letter-spacing: -0.025em; border-bottom: 1px inset rgb(229 231 235); padding-bottom: 0.3rem;
+	}
+	:global(.prose h3) { font-size: 1.25rem; margin: 1.5rem 0 0.75rem 0; font-weight: 600; color: rgb(55 65 81); }
+	:global(.prose h4) { font-size: 1.125rem; margin: 1.25rem 0 0.5rem 0; font-weight: 600; color: rgb(75 85 99); }
+	:global(.prose h5), :global(.prose h6) { font-size: 1rem; margin: 1rem 0 0.5rem 0; font-weight: 600; }
+
+	:global(.dark .prose h1), :global(.dark .prose h2) {
+		color: rgb(243 244 246); border-bottom-color: rgb(55 65 81);
+	}
+	:global(.dark .prose h3) { color: rgb(229 231 235); }
+	:global(.dark .prose h4) { color: rgb(209 213 219); }
 
 	/* Responsive text handling */
 	:global(.prose) {
@@ -1272,7 +1175,7 @@
 			font-size: 11px !important;
 		}
 
-		:global(.code-content) {
+		:global(.code-content code), :global(pre code.hljs) {
 			padding: 12px !important;
 			font-size: 12px !important;
 			line-height: 1.4 !important;
@@ -1302,8 +1205,8 @@
 			font-size: 10px !important;
 		}
 
-		:global(.code-content) {
-			padding: 8px !important;
+		:global(.code-content code), :global(pre code.hljs) {
+			padding: 10px !important;
 			font-size: 11px !important;
 			line-height: 1.3 !important;
 		}
@@ -1322,95 +1225,66 @@
 		}
 	}
 
-	/* Syntax highlighting for different languages */
+	/* Syntax highlighting for different languages - Premium Dark Theme */
 	:global(.hljs) {
 		background: rgb(15 23 42) !important;
-		color: rgb(226 232 240) !important;
+		color: #abb2bf !important;
 	}
 
-	:global(.hljs-keyword) {
-		color: rgb(168 85 247) !important; /* Purple for keywords */
-		font-weight: 600;
-	}
-
-	:global(.hljs-string) {
-		color: rgb(34 197 94) !important; /* Green for strings */
-	}
-
-	:global(.hljs-number) {
-		color: rgb(249 115 22) !important; /* Orange for numbers */
-	}
-
-	/* Enhanced syntax highlighting for better readability */
-	:global(.hljs-string) {
-		color: rgb(34 197 94) !important; /* Bright green for strings */
+	:global(.hljs-keyword),
+	:global(.hljs-operator),
+	:global(.hljs-selector-tag),
+	:global(.hljs-built_in),
+	:global(.hljs-literal) {
+		color: #c678dd !important; /* Bright Purple */
 		font-weight: 500;
 	}
 
+	:global(.hljs-string),
+	:global(.hljs-value),
+	:global(.hljs-addition) {
+		color: #9ece6a !important; /* Soft Lime Green */
+	}
+
 	:global(.hljs-number) {
-		color: rgb(249 115 22) !important; /* Orange for numbers */
-		font-weight: 600;
+		color: #ff9e64 !important; /* Peach Orange */
 	}
 
-	:global(.hljs-keyword) {
-		color: rgb(168 85 247) !important; /* Purple for keywords */
-		font-weight: 600;
-	}
-
-	:global(.hljs-comment) {
-		color: rgb(156 163 175) !important; /* Light gray for comments */
+	:global(.hljs-comment),
+	:global(.hljs-quote) {
+		color: #64748b !important; /* Slate 500 */
 		font-style: italic;
-		opacity: 0.8;
 	}
 
-	:global(.hljs-function) {
-		color: rgb(59 130 246) !important; /* Blue for functions */
-		font-weight: 600;
-	}
-
-	:global(.hljs-variable) {
-		color: rgb(245 158 11) !important; /* Amber for variables */
-		font-weight: 500;
-	}
-
-	:global(.hljs-type) {
-		color: rgb(14 165 233) !important; /* Sky blue for types */
-		font-weight: 500;
-	}
-
-	:global(.hljs-attr) {
-		color: rgb(59 130 246) !important; /* Blue for attributes */
-		font-weight: 500;
-	}
-
-	:global(.hljs-built_in) {
-		color: rgb(168 85 247) !important; /* Purple for built-ins */
-		font-weight: 600;
-	}
-
-	:global(.hljs-operator) {
-		color: rgb(239 68 68) !important; /* Red for operators */
-		font-weight: 600;
-	}
-
-	:global(.hljs-tag) {
-		color: rgb(239 68 68) !important; /* Red for HTML tags */
-	}
-
+	:global(.hljs-function),
+	:global(.hljs-title),
 	:global(.hljs-name) {
-		color: rgb(59 130 246) !important; /* Blue for tag names */
+		color: #61afef !important; /* Sky Blue */
+		font-weight: 500;
 	}
 
-	:global(.hljs-selector-tag) {
-		color: rgb(239 68 68) !important; /* Red for CSS selectors */
+	:global(.hljs-variable),
+	:global(.hljs-params),
+	:global(.hljs-template-variable) {
+		color: #e5c07b !important; /* Warm Yellow */
 	}
 
-	:global(.hljs-property) {
-		color: rgb(59 130 246) !important; /* Blue for CSS properties */
+	:global(.hljs-type),
+	:global(.hljs-class),
+	:global(.hljs-title.class_) {
+		color: #56b6c2 !important; /* Cyan */
+		font-weight: 500;
 	}
 
-	:global(.hljs-value) {
-		color: rgb(34 197 94) !important; /* Green for CSS values */
+	:global(.hljs-attr),
+	:global(.hljs-property),
+	:global(.hljs-tag) {
+		color: #e06c75 !important; /* Software Red/Coral */
+	}
+	
+	:global(.hljs-doctag),
+	:global(.hljs-meta) {
+		color: #7aa2f7 !important; /* Meta tags like imports */
 	}
 
 	/* Table styling */
@@ -1611,33 +1485,71 @@
 		}
 	}
 
-	:global(.prose ul),
-	:global(.prose ol) {
+	:global(.prose ul) {
+		list-style-type: none;
+		padding-left: 0;
+		margin: 1rem 0;
 		word-wrap: break-word;
 		overflow-wrap: break-word;
+	}
+	:global(.prose ul li) {
+		position: relative;
+		padding-left: 1.25rem;
+		margin-bottom: 0.5rem;
+		line-height: 1.6;
+	}
+	:global(.prose ul li::before) {
+		content: '•';
+		position: absolute;
+		left: 0.25rem;
+		color: rgb(59 130 246); /* text-blue-500 */
+		font-weight: bold;
+		font-size: 1.1em;
+	}
+	
+	:global(.prose ol) {
+		padding-left: 1.25rem;
+		margin: 1rem 0;
+		word-wrap: break-word;
+		overflow-wrap: break-word;
+	}
+	:global(.prose ol li) {
+		margin-bottom: 0.5rem;
+		padding-left: 0.25rem;
+		line-height: 1.6;
+	}
+	:global(.prose ol li::marker) {
+		color: rgb(59 130 246); /* text-blue-500 */
+		font-weight: 600;
+	}
+
+	:global(.dark .prose ul li::before),
+	:global(.dark .prose ol li::marker) {
+		color: rgb(96 165 250); /* text-blue-400 */
 	}
 
 	:global(.prose blockquote) {
 		border-left: 4px solid rgb(59 130 246);
-		padding-left: 1rem;
-		margin: 1rem 0;
-		background-color: rgb(243 244 246);
-		border-radius: 0.25rem;
+		padding: 0.75rem 1rem;
+		margin: 1.25rem 0;
+		background: linear-gradient(to right, rgb(239 246 255), transparent);
+		border-radius: 0 0.5rem 0.5rem 0;
 		word-wrap: break-word;
-		color: rgb(107 114 128);
+		color: rgb(75 85 99);
+		font-style: italic;
 	}
 
 	:global(.dark .prose blockquote) {
 		border-left-color: rgb(96 165 250);
-		background-color: rgb(31 41 55);
+		background: linear-gradient(to right, rgba(30, 58, 138, 0.4), transparent);
 		color: rgb(156 163 175);
 	}
 
 	/* Mobile responsive blockquote */
 	@media (max-width: 768px) {
 		:global(.prose blockquote) {
-			padding-left: 0.75rem;
-			margin: 0.75rem 0;
+			padding: 0.5rem 0.75rem;
+			margin: 1rem 0;
 			font-size: 14px;
 		}
 	}

@@ -59,7 +59,7 @@
 	});
 
 	async function handleSendMessage(
-		event: CustomEvent<{ message: string; model: string; files?: File[] }>
+		event: CustomEvent<{ message: string; model: string; files?: File[]; webSearch?: boolean }>
 	) {
 		const userMessage = event.detail.message;
 		const files = event.detail.files || uploadedFiles;
@@ -101,7 +101,14 @@
 				},
 				body: JSON.stringify({
 					message: fileContent ? `${userMessage}\n\nFile content:\n${fileContent}` : userMessage,
-					model: $selectedModel
+					model: $selectedModel,
+					webSearch: event.detail.webSearch,
+					history: localMessages
+						.filter((msg) => msg.id !== optimisticUserMessage.id)
+						.map((msg) => ({
+							role: msg.role,
+							content: msg.content
+						}))
 				}),
 				signal: abortController.signal
 			});
@@ -172,11 +179,12 @@
 				}
 
 				let text = '';
+				const isOfficeDoc = file.name.match(/\.(docx|pptx|xlsx|doc|ppt|xls|odt|odp|ods)$/i);
 
 				if (file.type.startsWith('image/')) {
 					text = await readImageAsText(file);
-				} else if (file.type === 'application/pdf') {
-					text = `[PDF File: ${file.name}] - PDF content extraction not yet implemented. Please convert to text format.`;
+				} else if (file.type === 'application/pdf' || isOfficeDoc) {
+					text = await extractDocumentContent(file);
 				} else if (file.type.includes('spreadsheet') || file.name.endsWith('.csv')) {
 					text = await readFileAsText(file);
 				} else {
@@ -220,6 +228,38 @@
 				binaryReader.readAsArrayBuffer(file);
 			}
 		});
+	}
+
+	async function extractDocumentContent(file: File): Promise<string> {
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+			
+			const response = await fetch('/api/extract', {
+				method: 'POST',
+				body: formData
+			});
+			
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+			}
+			
+			const data = await response.json();
+			let extractedText = data.text || '';
+			
+			// Append metadata for better RAG context
+			if (data.type === 'pdf' && data.pages) {
+				extractedText = `[PDF Metadata: ${data.pages} pages] \n\n${extractedText}`;
+			} else if (data.type === 'office') {
+				extractedText = `[Document: ${file.name}] \n\n${extractedText}`;
+			}
+			
+			return extractedText;
+		} catch (error) {
+			console.error('Document extraction failed:', error);
+			return `[Error extracting document: ${error instanceof Error ? error.message : String(error)}] - Please try copying the text manually.`;
+		}
 	}
 
 	function readImageAsText(file: File): Promise<string> {
